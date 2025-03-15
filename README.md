@@ -9,6 +9,8 @@ A web application that displays current weather conditions, astronomy data, and 
 - Weather alerts and warnings
 - Search by city name, zip code, IP address, or coordinates
 - Optional data storage with InfluxDB
+- Marine weather data (tides, swells, water temperature)
+- Air quality information
 
 ## Installation
 
@@ -63,13 +65,18 @@ You can search for weather information using any of the following formats:
 - IP address (e.g., "100.0.0.1")
 - Latitude and longitude (e.g., "48.8567,2.3508")
 
+## Data Collection
+
+The application includes a toggle for data collection. When enabled, weather data is stored in InfluxDB for later analysis. This feature is disabled by default and can be toggled on the main page.
+
 ## Technologies Used
 
-- Python
-- Flask
+- Python 3.8+
+- Flask 2.3.3
 - Bootstrap 5
 - Font Awesome
 - WeatherAPI.com
+- InfluxDB 2.x
 
 ## License
 

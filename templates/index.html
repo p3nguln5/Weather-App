@@ -22,19 +22,21 @@
                 
                 <!-- Data Collection Toggle -->
                 <div class="d-flex justify-content-center mt-3">
-                    <form method="POST" action="{{ url_for('toggle_data_collection') }}">
-                        <button type="submit" class="btn btn-sm {% if collect_data %}btn-danger{% else %}btn-success{% endif %}">
-                            <i class="fas {% if collect_data %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
-                            Data Collection: {% if collect_data %}ON{% else %}OFF{% endif %}
-                        </button>
-                    </form>
-                    <small class="form-text text-muted d-block mt-1 text-center">
-                        {% if collect_data %}
-                            Weather data will be saved to the database.
-                        {% else %}
-                            Weather data will only be displayed, not saved.
-                        {% endif %}
-                    </small>
+                    <div class="text-center">
+                        <form method="POST" action="{{ url_for('toggle_data_collection') }}">
+                            <button type="submit" class="btn {% if collect_data %}btn-danger{% else %}btn-success{% endif %}">
+                                <i class="fas {% if collect_data %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
+                                Data Collection: {% if collect_data %}ON{% else %}OFF{% endif %}
+                            </button>
+                        </form>
+                        <small class="form-text text-muted d-block mt-2">
+                            {% if collect_data %}
+                                Weather data will be saved to the database.
+                            {% else %}
+                                Weather data will only be displayed, not saved.
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>

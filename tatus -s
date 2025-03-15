@@ -1,0 +1,360 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 2188cf8..1b338f6 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -9,6 +9,8 @@[m [mA web application that displays current weather conditions, astronomy data, and[m
+ - Weather alerts and warnings[m
+ - Search by city name, zip code, IP address, or coordinates[m
+ - Optional data storage with InfluxDB[m
+[32m+[m[32m- Marine weather data (tides, swells, water temperature)[m
+[32m+[m[32m- Air quality information[m
+ [m
+ ## Installation[m
+ [m
+[36m@@ -63,13 +65,18 @@[m [mYou can search for weather information using any of the following formats:[m
+ - IP address (e.g., "100.0.0.1")[m
+ - Latitude and longitude (e.g., "48.8567,2.3508")[m
+ [m
+[32m+[m[32m## Data Collection[m
+[32m+[m
+[32m+[m[32mThe application includes a toggle for data collection. When enabled, weather data is stored in InfluxDB for later analysis. This feature is disabled by default and can be toggled on the main page.[m
+[32m+[m
+ ## Technologies Used[m
+ [m
+[31m-- Python[m
+[31m-- Flask[m
+[32m+[m[32m- Python 3.8+[m
+[32m+[m[32m- Flask 2.3.3[m
+ - Bootstrap 5[m
+ - Font Awesome[m
+ - WeatherAPI.com[m
+[32m+[m[32m- InfluxDB 2.x[m
+ [m
+ ## License[m
+ [m
+[1mdiff --git a/app.py b/app.py[m
+[1mindex 24e2465..75f7706 100644[m
+[1m--- a/app.py[m
+[1m+++ b/app.py[m
+[36m@@ -46,15 +46,20 @@[m [mdef extract_weather_data(weather_data):[m
+     """Extract all relevant weather data from the API response"""[m
+     result = {}[m
+     [m
+[32m+[m[32m    # Helper function to extract multiple fields at once[m
+[32m+[m[32m    def extract_fields(source_dict, field_list, prefix=''):[m
+[32m+[m[32m        for field in field_list:[m
+[32m+[m[32m            result[f"{prefix}{field}"] = source_dict.get(field)[m
+[32m+[m[41m    [m
+     # Extract Current Weather data[m
+     current = weather_data.get('current', {})[m
+[31m-    for field in ['last_updated_epoch', 'last_updated', 'temp_c', 'temp_f', 'is_day', [m
+[31m-                 'wind_mph', 'wind_kph', 'wind_degree', 'wind_dir', 'pressure_mb', [m
+[31m-                 'pressure_in', 'precip_mm', 'precip_in', 'humidity', 'cloud', [m
+[31m-                 'feelslike_c', 'feelslike_f', 'vis_km', 'vis_miles', 'gust_mph', [m
+[31m-                 'gust_kph', 'uv', 'windchill_c', 'windchill_f', 'heatindex_c', [m
+[31m-                 'heatindex_f', 'dewpoint_c', 'dewpoint_f']:[m
+[31m-        result[field] = current.get(field)[m
+[32m+[m[32m    current_fields = ['last_updated_epoch', 'last_updated', 'temp_c', 'temp_f', 'is_day',[m[41m [m
+[32m+[m[32m                     'wind_mph', 'wind_kph', 'wind_degree', 'wind_dir', 'pressure_mb',[m[41m [m
+[32m+[m[32m                     'pressure_in', 'precip_mm', 'precip_in', 'humidity', 'cloud',[m[41m [m
+[32m+[m[32m                     'feelslike_c', 'feelslike_f', 'vis_km', 'vis_miles', 'gust_mph',[m[41m [m
+[32m+[m[32m                     'gust_kph', 'uv', 'windchill_c', 'windchill_f', 'heatindex_c',[m[41m [m
+[32m+[m[32m                     'heatindex_f', 'dewpoint_c', 'dewpoint_f'][m
+[32m+[m[32m    extract_fields(current, current_fields)[m
+     [m
+     # Extract condition data[m
+     condition = current.get('condition', {})[m
+[36m@@ -74,8 +79,7 @@[m [mdef extract_weather_data(weather_data):[m
+                  'totalprecip_in', 'totalsnow_cm', 'avgvis_km', 'avgvis_miles', [m
+                  'avghumidity', 'daily_will_it_rain', 'daily_will_it_snow', [m
+                  'daily_chance_of_rain', 'daily_chance_of_snow', 'uv'][m
+[31m-    for field in day_fields:[m
+[31m-        result[field] = day.get(field)[m
+[32m+[m[32m    extract_fields(day, day_fields)[m
+     [m
+     # Day condition[m
+     day_condition = day.get('condition', {})[m
+[36m@@ -87,8 +91,7 @@[m [mdef extract_weather_data(weather_data):[m
+     astro = forecast_day.get('astro', {})[m
+     astro_fields = ['sunrise', 'sunset', 'moonrise', 'moonset', 'moon_phase', [m
+                    'moon_illumination', 'is_sun_up', 'is_moon_up'][m
+[31m-    for field in astro_fields:[m
+[31m-        result[field] = astro.get(field)[m
+[32m+[m[32m    extract_fields(astro, astro_fields)[m
+     [m
+     # Hour data (first hour of forecast)[m
+     hour_data = extract_nested_value(forecast_day, ['hour', 0], {})[m
+[36m@@ -100,8 +103,7 @@[m [mdef extract_weather_data(weather_data):[m
+                       'heatindex_c', 'heatindex_f', 'dewpoint_c', 'dewpoint_f', [m
+                       'will_it_rain', 'will_it_snow', 'chance_of_rain', 'chance_of_snow', [m
+                       'vis_km', 'vis_miles', 'gust_mph', 'gust_kph', 'uv'][m
+[31m-        for field in hour_fields:[m
+[31m-            result[f'hour_{field}'] = hour_data.get(field)[m
+[32m+[m[32m        extract_fields(hour_data, hour_fields, 'hour_')[m
+         [m
+         # Hour condition[m
+         hour_condition = hour_data.get('condition', {})[m
+[36m@@ -115,28 +117,19 @@[m [mdef extract_weather_data(weather_data):[m
+     # Extract tide data[m
+     tide_data = extract_nested_value(marine_data, ['tides', 0, 'tide', 0], {})[m
+     if tide_data:[m
+[31m-        result['tide_time'] = tide_data.get('tide_time')[m
+[31m-        result['tide_height_mt'] = tide_data.get('tide_height_mt')[m
+[31m-        result['tide_type'] = tide_data.get('tide_type')[m
+[32m+[m[32m        tide_fields = ['tide_time', 'tide_height_mt', 'tide_type'][m
+[32m+[m[32m        extract_fields(tide_data, tide_fields)[m
+     [m
+     # Marine hour data[m
+     marine_fields = ['sig_ht_mt', 'swell_ht_mt', 'swell_ht_ft', 'swell_dir', [m
+                     'swell_dir_16_point', 'swell_period_secs', 'water_temp_c', 'water_temp_f'][m
+[31m-    for field in marine_fields:[m
+[31m-        result[field] = hour_data.get(field) if hour_data else None[m
+[32m+[m[32m    if hour_data:[m
+[32m+[m[32m        extract_fields(hour_data, marine_fields)[m
+     [m
+     # Air quality data[m
+     if 'air_quality' in current:[m
+[31m-        result['air_quality'] = {[m
+[31m-            'co': current['air_quality'].get('co'),[m
+[31m-            'o3': current['air_quality'].get('o3'),[m
+[31m-            'no2': current['air_quality'].get('no2'),[m
+[31m-            'so2': current['air_quality'].get('so2'),[m
+[31m-            'pm2_5': current['air_quality'].get('pm2_5'),[m
+[31m-            'pm10': current['air_quality'].get('pm10'),[m
+[31m-            'us_epa_index': current['air_quality'].get('us-epa-index'),[m
+[31m-            'gb_defra_index': current['air_quality'].get('gb-defra-index')[m
+[31m-        }[m
+[32m+[m[32m        air_quality_fields = ['co', 'o3', 'no2', 'so2', 'pm2_5', 'pm10', 'us-epa-index', 'gb-defra-index'][m
+[32m+[m[32m        result['air_quality'] = {field: current['air_quality'].get(field) for field in air_quality_fields}[m
+     else:[m
+         result['air_quality'] = {}[m
+     [m
+[36m@@ -145,16 +138,8 @@[m [mdef extract_weather_data(weather_data):[m
+     [m
+     # Location data[m
+     location = weather_data.get('location', {})[m
+[31m-    result['location_data'] = {[m
+[31m-        'name': location.get('name'),[m
+[31m-        'region': location.get('region'),[m
+[31m-        'country': location.get('country'),[m
+[31m-        'lat': location.get('lat'),[m
+[31m-        'lon': location.get('lon'),[m
+[31m-        'tz_id': location.get('tz_id'),[m
+[31m-        'localtime_epoch': location.get('localtime_epoch'),[m
+[31m-        'localtime': location.get('localtime')[m
+[31m-    }[m
+[32m+[m[32m    location_fields = ['name', 'region', 'country', 'lat', 'lon', 'tz_id', 'localtime_epoch', 'localtime'][m
+[32m+[m[32m    result['location_data'] = {field: location.get(field) for field in location_fields}[m
+     [m
+     # Format location string[m
+     result['formatted_location'] = f"{location.get('name', '')}, {location.get('country', '')}"[m
+[36m@@ -167,6 +152,12 @@[m [mdef toggle_data_collection():[m
+     current_state = session.get('collect_data', DATA_COLLECTION_DEFAULT)[m
+     session['collect_data'] = not current_state[m
+     [m
+[32m+[m[32m    # Add a flash message to provide feedback[m
+[32m+[m[32m    if session['collect_data']:[m
+[32m+[m[32m        flash('Data collection has been enabled. Weather data will be saved to the database.', 'success')[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        flash('Data collection has been disabled. Weather data will only be displayed, not saved.', 'info')[m
+[32m+[m[41m    [m
+     # Return to the previous page[m
+     return redirect(request.referrer or url_for('index'))[m
+ [m
+[36m@@ -190,131 +181,34 @@[m [mdef index():[m
+         [m
+         if not weather_data:[m
+             flash('Unable to retrieve weather data for the specified location. Please try again.', 'error')[m
+[31m-        else:[m
+[31m-            # Only write weather data to InfluxDB if data collection is enabled[m
+[31m-            if session.get('collect_data', DATA_COLLECTION_DEFAULT):[m
+[31m-                try:[m
+[31m-                    print(f"Processing weather data for {location}")[m
+[31m-                    [m
+[31m-                    # Extract all weather data[m
+[31m-                    data = extract_weather_data(weather_data)[m
+[32m+[m[32m        elif session.get('collect_data', DATA_COLLECTION_DEFAULT):[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                logger.info(f"Processing weather data for {location}")[m
+[32m+[m[41m                [m
+[32m+[m[32m                # Extract all weather data[m
+[32m+[m[32m                data = extract_weather_data(weather_data)[m
+[32m+[m[41m                [m
+[32m+[m[32m                # Write to InfluxDB[m
+[32m+[m[32m                write_success = write_weather_data([m
+[32m+[m[32m                    location=data['formatted_location'],[m
+[32m+[m[32m                    **{k: v for k, v in data.items() if k not in ['formatted_location', 'location_data', 'air_quality']}[m
+[32m+[m[32m                )[m
+[32m+[m[41m                [m
+[32m+[m[32m                if write_success:[m
+[32m+[m[32m                    logger.info(f"Successfully wrote weather data for {location} to InfluxDB")[m
+[32m+[m[32m                    verify_data_written(data['formatted_location'])[m
+[32m+[m[32m                    flash('Weather data successfully saved to InfluxDB!', 'success')[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    logger.warning(f"Failed to write weather data for {location} to InfluxDB")[m
+[32m+[m[32m                    flash('Failed to save weather data to InfluxDB.', 'warning')[m
+                     [m
+[31m-                    # Write to InfluxDB[m
+[31m-                    write_success = write_weather_data([m
+[31m-                        location=data['formatted_location'],[m
+[31m-                        temperature=data['temp_c'],[m
+[31m-                        humidity=data['humidity'],[m
+[31m-                        feels_like=data['feelslike_c'],[m
+[31m-                        wind=data['wind_kph'],[m
+[31m-                        sunrise=data.get('sunrise'),  # Use get() to handle None values[m
+[31m-                        sunset=data.get('sunset'),    # Use get() to handle None values[m
+[31m-                        alerts=data['alerts'],[m
+[31m-                        pressure=data['pressure_mb'],[m
+[31m-                        uv_index=data['uv'],[m
+[31m-                        visibility=data['vis_km'],[m
+[31m-                        condition=data['condition_text'],[m
+[31m-                        precipitation=data['precip_mm'],[m
+[31m-                        cloud_cover=data['cloud'],[m
+[31m-                        wind_direction=data['wind_dir'],[m
+[31m-                        gust=data['gust_kph'],[m
+[31m-                        [m
+[31m-                        # Current Weather[m
+[31m-                        last_updated_epoch=data['last_updated_epoch'],[m
+[31m-                        last_updated=data['last_updated'],[m
+[31m-                        temp_c=data['temp_c'],[m
+[31m-                        temp_f=data['temp_f'],[m
+[31m-                        is_day=data['is_day'],[m
+[31m-                        icon=data['condition_icon'],[m
+[31m-                        code=data['condition_code'],[m
+[31m-                        wind_mph=data['wind_mph'],[m
+[31m-                        wind_kph=data['wind_kph'],[m
+[31m-                        wind_degree=data['wind_degree'],[m
+[31m-                        pressure_mb=data['pressure_mb'],[m
+[31m-                        pressure_in=data['pressure_in'],[m
+[31m-                        precip_mm=data['precip_mm'],[m
+[31m-                        precip_in=data['precip_in'],[m
+[31m-                        vis_km=data['vis_km'],[m
+[31m-                        vis_miles=data['vis_miles'],[m
+[31m-                        gust_mph=data['gust_mph'],[m
+[31m-                        gust_kph=data['gust_kph'],[m
+[31m-                        feelslike_c=data['feelslike_c'],[m
+[31m-                        feelslike_f=data['feelslike_f'],[m
+[31m-                        windchill_c=data['windchill_c'],[m
+[31m-                        windchill_f=data['windchill_f'],[m
+[31m-                        heatindex_c=data['heatindex_c'],[m
+[31m-                        heatindex_f=data['heatindex_f'],[m
+[31m-                        dewpoint_c=data['dewpoint_c'],[m
+[31m-                        dewpoint_f=data['dewpoint_f'],[m
+[31m-                        [m
+[31m-                        # Forecast/Future/History Weather[m
+[31m-                        date=data['date'],[m
+[31m-                        date_epoch=data['date_epoch'],[m
+[31m-                        maxtemp_c=data['maxtemp_c'],[m
+[31m-                        maxtemp_f=data['maxtemp_f'],[m
+[31m-                        mintemp_c=data['mintemp_c'],[m
+[31m-                        mintemp_f=data['mintemp_f'],[m
+[31m-                        avgtemp_c=data['avgtemp_c'],[m
+[31m-                        avgtemp_f=data['avgtemp_f'],[m
+[31m-                        max_wind_mph=data['maxwind_mph'],[m
+[31m-                        max_wind_kph=data['maxwind_kph'],[m
+[31m-                        totalprecip_mm=data['totalprecip_mm'],[m
+[31m-                        totalprecip_in=data['totalprecip_in'],[m
+[31m-                        totalsnow_cm=data['totalsnow_cm'],[m
+[31m-                        avgvis_km=data['avgvis_km'],[m
+[31m-                        avgvis_miles=data['avgvis_miles'],[m
+[31m-                        avghumidity=data['avghumidity'],[m
+[31m-                        daily_will_it_rain=data['daily_will_it_rain'],[m
+[31m-                        daily_will_it_snow=data['daily_will_it_snow'],[m
+[31m-                        daily_chance_of_rain=data['daily_chance_of_rain'],[m
+[31m-                        daily_chance_of_snow=data['daily_chance_of_snow'],[m
+[31m-                        [m
+[31m-                        # Astro[m
+[31m-                        moonrise=data['moonrise'],[m
+[31m-                        moonset=data['moonset'],[m
+[31m-                        moon_phase=data['moon_phase'],[m
+[31m-                        moon_illumination=data['moon_illumination'],[m
+[31m-                        is_sun_up=data['is_sun_up'],[m
+[31m-                        is_moon_up=data['is_moon_up'],[m
+[31m-                        [m
+[31m-                        # Hour[m
+[31m-                        time_epoch=data.get('hour_time_epoch'),[m
+[31m-                        time=data.get('hour_time'),[m
+[31m-                        will_it_rain=data.get('hour_will_it_rain'),[m
+[31m-                        will_it_snow=data.get('hour_will_it_snow'),[m
+[31m-                        chance_of_rain=data.get('hour_chance_of_rain'),[m
+[31m-                        chance_of_snow=data.get('hour_chance_of_snow'),[m
+[31m-                        snow_cm=data.get('hour_snow_cm'),[m
+[31m-                        [m
+[31m-                        # Marine Weather[m
+[31m-                        tides=None,  # Not directly available in the API response[m
+[31m-                        tide_time=data.get('tide_time'),[m
+[31m-                        tide_height_mt=data.get('tide_height_mt'),[m
+[31m-                        tide_type=data.get('tide_type'),[m
+[31m-                        sig_ht_mt=data.get('sig_ht_mt'),[m
+[31m-                        swell_ht_mt=data.get('swell_ht_mt'),[m
+[31m-                        swell_ht_ft=data.get('swell_ht_ft'),[m
+[31m-                        swell_dir=data.get('swell_dir'),[m
+[31m-                        swell_dir_16_point=data.get('swell_dir_16_point'),[m
+[31m-                        swell_period_secs=data.get('swell_period_secs'),[m
+[31m-                        water_temp_c=data.get('water_temp_c'),[m
+[31m-                        water_temp_f=data.get('water_temp_f'),[m
+[31m-                        [m
+[31m-                        # Additional data[m
+[31m-                        air_quality=data['air_quality'],[m
+[31m-                        location_data=data['location_data'][m
+[31m-                    )[m
+[31m-                    [m
+[31m-                    if write_success:[m
+[31m-                        flash('Weather data successfully saved to InfluxDB!', 'success')[m
+[31m-                    else:[m
+[31m-                        flash('Failed to save weather data to InfluxDB.', 'error')[m
+[31m-                        [m
+[31m-                except Exception as e:[m
+[31m-                    print(f"Error processing weather data: {e}")[m
+[31m-                    traceback.print_exc()[m
+[31m-                    flash('An error occurred while processing the weather data.', 'error')[m
+[31m-            else:[m
+[31m-                flash('Weather data displayed but not saved to database (data collection is disabled).', 'info')[m
+[32m+[m[32m            except Exception as e:[m
+[32m+[m[32m                logger.error(f"Error processing weather data for {location}: {e}")[m
+[32m+[m[32m                logger.error(traceback.format_exc())[m
+[32m+[m[32m                flash('An error occurred while processing the weather data.', 'error')[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            # Data collection is disabled[m
+[32m+[m[32m            flash('Weather data displayed but not saved (data collection is disabled).', 'info')[m
+     [m
+     return render_template('index.html', weather_data=weather_data, location=location, collect_data=session.get('collect_data', DATA_COLLECTION_DEFAULT))[m
+ [m
+[1mdiff --git a/influxdb_service.py b/influxdb_service.py[m
+[1mindex 29c81f9..e8d6073 100644[m
+[1m--- a/influxdb_service.py[m
+[1m+++ b/influxdb_service.py[m
+[36m@@ -4,6 +4,8 @@[m [mimport os[m
+ import dotenv[m
+ import traceback[m
+ import logging[m
+[32m+[m[32mfrom functools import lru_cache[m
+[32m+[m[32mfrom typing import Dict, Any, Optional, Union[m
+ [m
+ # Configure logging[m
+ logging.basicConfig([m
+[36m@@ -21,11 +23,14 @@[m [mINFLUXDB_TOKEN = os.environ.get("INFLUXDB_TOKEN")[m
+ INFLUXDB_ORG = os.environ.get("INFLUXDB_ORG")[m
+ INFLUXDB_BUCKET = os.environ.get("INFLUXDB_BUCKET")[m
+ [m
+[32m+[m[32m# Global client instance[m
+[32m+[m[32mclient = None[m
+[32m+[m[32mwrite_api = None[m
+[32m+[m
+ # Check if required environment variables are set[m
+ if not all([INFLUXDB_URL, INFLUXDB_TOKEN, INFLUXDB_ORG, INFLUXDB_BUCKET]):[m
+     logger.warning("Missing InfluxDB configuration. Data storage will not be available.")[m
+     logger.warning("Please set INFLUXDB_URL, INFLUXDB_TOKEN, INFLUXDB_ORG, and INFLUXDB_BUCKET in your .env file.")[m
+[31m-    client = None[m
+ else:[m
+     # Initialize InfluxDB client[m
+     try:[m
+[36m@@ -35,9 +40,8 @@[m [melse:[m
+     except Exception as e:[m
+         logger.error(f"Error initializing InfluxDB client: {e}")[m
+         traceback.print_exc()[m
+[31m-        client = None[m
+ [m
+[31m-def add_field_to_point(point, name, value, is_string=False):[m
+[32m+[m[32mdef add_field_to_point(point: Point, name: str, value: Any, is_string: bool = False) -> Point:[m
+     """Helper function to add 
