@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Weather App - About{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">About Weather App</h1>
+                
+                <p class="lead">
+                    Weather App is a simple web application that provides current weather conditions, astronomy data, and weather alerts for locations around the world.
+                </p>
+                
+                <h2 class="h4 mt-4">Features</h2>
+                <ul>
+                    <li>Current weather conditions (temperature, humidity, wind, etc.)</li>
+                    <li>Astronomy data (sunrise, sunset, moonrise, moonset, moon phase)</li>
+                    <li>Weather alerts and warnings</li>
+                    <li>Search by city name, zip code, IP address, or coordinates</li>
+                </ul>
+                
+                <h2 class="h4 mt-4">Data Source</h2>
+                <p>
+                    This application uses the <a href="https://www.weatherapi.com/" target="_blank">WeatherAPI.com</a> service to retrieve weather data.
+                    WeatherAPI.com provides real-time weather information for locations worldwide.
+                </p>
+                
+                <h2 class="h4 mt-4">Search Options</h2>
+                <p>You can search for weather information using any of the following formats:</p>
+                <ul>
+                    <li>City name (e.g., "London", "New York")</li>
+                    <li>City and country (e.g., "Paris, France")</li>
+                    <li>US zip code (e.g., "90210")</li>
+                    <li>UK postcode (e.g., "SW1")</li>
+                    <li>Canada postal code (e.g., "G2J")</li>
+                    <li>IP address (e.g., "100.0.0.1")</li>
+                    <li>Latitude and longitude (e.g., "48.8567,2.3508")</li>
+                </ul>
+                
+                <h2 class="h4 mt-4">Technologies Used</h2>
+                <ul>
+                    <li>Python</li>
+                    <li>Flask</li>
+                    <li>Bootstrap 5</li>
+                    <li>Font Awesome</li>
+                    <li>WeatherAPI.com</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

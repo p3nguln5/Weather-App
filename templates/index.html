@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Weather App - Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">Weather Forecast</h1>
+                <form method="POST" action="{{ url_for('index') }}" class="mb-4">
+                    <div class="input-group">
+                        <input type="text" name="location" class="form-control" placeholder="Enter city, zip code, IP address, or coordinates (lat,lon)" value="{{ location or '' }}" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">
+                        Examples: "London", "New York", "90210", "Paris, France", "48.8567,2.3508"
+                    </small>
+                </form>
+                
+                <!-- Data Collection Toggle -->
+                <div class="d-flex justify-content-center mt-3">
+                    <form method="POST" action="{{ url_for('toggle_data_collection') }}">
+                        <button type="submit" class="btn btn-sm {% if collect_data %}btn-danger{% else %}btn-success{% endif %}">
+                            <i class="fas {% if collect_data %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
+                            Data Collection: {% if collect_data %}ON{% else %}OFF{% endif %}
+                        </button>
+                    </form>
+                    <small class="form-text text-muted d-block mt-1 text-center">
+                        {% if collect_data %}
+                            Weather data will be saved to the database.
+                        {% else %}
+                            Weather data will only be displayed, not saved.
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if weather_data %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    {{ weather_data.location.name }}, {{ weather_data.location.region }} {{ weather_data.location.country }}
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <img src="https:{{ weather_data.current.condition.icon }}" alt="{{ weather_data.current.condition.text }}" class="img-fluid" style="width: 128px;">
+                        <h3 class="h2 mb-0">{{ weather_data.current.temp_f }}°F</h3>
+                        <p class="text-muted">{{ weather_data.current.temp_c }}°C</p>
+                        <h4 class="h5">{{ weather_data.current.condition.text }}</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-thermometer-half me-2"></i> Feels Like</span>
+                                <span>{{ weather_data.current.feelslike_f }}°F ({{ weather_data.current.feelslike_c }}°C)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-tint me-2"></i> Humidity</span>
+                                <span>{{ weather_data.current.humidity }}%</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-wind me-2"></i> Wind</span>
+                                <span>{{ weather_data.current.wind_mph }} mph ({{ weather_data.current.wind_kph }} kph) {{ weather_data.current.wind_dir }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-compress-alt me-2"></i> Pressure</span>
+                                <span>{{ weather_data.current.pressure_mb }} mb ({{ weather_data.current.pressure_in }} in)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-eye me-2"></i> Visibility</span>
+                                <span>{{ weather_data.current.vis_miles }} miles ({{ weather_data.current.vis_km }} km)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <small>Last updated: {{ weather_data.current.last_updated }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Astronomy Information -->
+{% if weather_data.forecast.forecastday[0].astro %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h3 class="h5 mb-0"><i class="fas fa-moon me-2"></i> Astronomy</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-sun me-2"></i> Sunrise</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.sunrise }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-sun me-2"></i> Sunset</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.sunset }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-moon me-2"></i> Moonrise</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.moonrise }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-moon me-2"></i> Moonset</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.moonset }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-star-half-alt me-2"></i> Moon Phase</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.moon_phase }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-adjust me-2"></i> Moon Illumination</span>
+                                <span>{{ weather_data.forecast.forecastday[0].astro.moon_illumination }}%</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Weather Alerts -->
+{% if weather_data.alerts and weather_data.alerts.alert and weather_data.alerts.alert|length > 0 %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="h5 mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Weather Alerts</h3>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="alertsAccordion">
+                    {% for alert in weather_data.alerts.alert %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ loop.index }}">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                                {{ alert.headline }}
+                            </button>
+                        </h2>
+                        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#alertsAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Areas:</strong> {{ alert.areas }}</p>
+                                <p><strong>Severity:</strong> {{ alert.severity }}</p>
+                                <p><strong>Urgency:</strong> {{ alert.urgency }}</p>
+                                <p><strong>Certainty:</strong> {{ alert.certainty }}</p>
+                                <p><strong>Effective:</strong> {{ alert.effective }}</p>
+                                <p><strong>Expires:</strong> {{ alert.expires }}</p>
+                                <hr>
+                                <p>{{ alert.desc }}</p>
+                                {% if alert.instruction %}
+                                <hr>
+                                <p><strong>Instructions:</strong> {{ alert.instruction }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %} 
